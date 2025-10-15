@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
@@ -15,9 +16,9 @@ namespace ScreenSpaceOutline
         private readonly ScreenSpaceOutline.OutlineSettings m_Settings;
         private readonly Material m_MaskMaterial;
         private readonly Material m_OutlineMaterial;
-        private readonly List<OutlineRenderer> m_OutlineRenderers = new();
         
         private RTHandle m_MaskTexture;
+        private RTHandle m_ResolvedMaskTexture;
         private RTHandle m_TempTexture;
         private FilteringSettings m_FilteringSettings;
         
@@ -41,7 +42,6 @@ namespace ScreenSpaceOutline
         {
             var descriptor = renderingData.cameraData.cameraTargetDescriptor;
             descriptor.depthBufferBits = 0;
-            descriptor.msaaSamples = 1;
             
             // set to mask resolution to current resolution
             var maskWidth = descriptor.width;
@@ -57,29 +57,40 @@ namespace ScreenSpaceOutline
             var maskDescriptor = descriptor;
             maskDescriptor.width = maskWidth;
             maskDescriptor.height = maskHeight;
+            maskDescriptor.msaaSamples = m_Settings.useMSAA ? 4 : 1;
             
             RenderingUtils.ReAllocateIfNeeded(ref m_MaskTexture, maskDescriptor, FilterMode.Bilinear, TextureWrapMode.Clamp, name: "_OutlineMask");
+
+            if (m_Settings.useMSAA)
+            {
+                var resolvedDescriptor = maskDescriptor;
+                resolvedDescriptor.msaaSamples = 1;
+                RenderingUtils.ReAllocateIfNeeded(ref m_ResolvedMaskTexture, descriptor, FilterMode.Bilinear, TextureWrapMode.Clamp, name: "_OutlineMaskResolved");
+            }
+            
             RenderingUtils.ReAllocateIfNeeded(ref m_TempTexture, descriptor, FilterMode.Bilinear, TextureWrapMode.Clamp, name: "_OutlineTemp");
         }
         
         public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
         {
             // collects outlinable objects
-            m_OutlineRenderers.Clear();
-            OutlineRenderer.GetActiveRenderers(m_OutlineRenderers);
+            var renderersByColor = OutlineRenderer.GetRenderersByColor();
             
-            if (m_OutlineRenderers.Count == 0)
+            if (renderersByColor.Count == 0)
                 return;
             
             var cmd = CommandBufferPool.Get("Outline Rendering");
             
             try
             {
-                var cameraColorTarget = renderingData.cameraData.renderer.cameraColorTargetHandle;
-                RenderMask(cmd, context, ref renderingData);
-                RenderOutline(cmd, ref renderingData);
+                foreach (var colorGroup in renderersByColor)
+                {
+                    RenderMask(cmd, colorGroup.Value, context, ref renderingData);
+                    RenderOutline(cmd, colorGroup.Key, ref renderingData);
+                }
                 
                 context.ExecuteCommandBuffer(cmd);
+                cmd.Clear();
             }
             finally
             {
@@ -87,41 +98,46 @@ namespace ScreenSpaceOutline
             }
         }
         
-        private void RenderMask(CommandBuffer cmd, ScriptableRenderContext context, ref RenderingData renderingData)
+        private void RenderMask(CommandBuffer cmd, List<OutlineRenderer> renderers, ScriptableRenderContext context, ref RenderingData renderingData)
         {
             // setup mask render target
             cmd.SetRenderTarget(m_MaskTexture, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
             cmd.ClearRenderTarget(true, true, Color.clear);
-            context.ExecuteCommandBuffer(cmd);
-            cmd.Clear();
             
             // render outline just for cached `OutlineRenderer`s
-            foreach (var outlineRenderer in m_OutlineRenderers)
+            foreach (var outlineRenderer in renderers)
             {
                 if (outlineRenderer == null || !outlineRenderer.IsActiveAndEnabled())
                     continue;
                 
                 var renderer = outlineRenderer.GetComponent<Renderer>();
-                if (renderer != null && renderer.enabled && renderer.gameObject.activeInHierarchy)
-                {
-                    for (var i = 0; i < renderer.sharedMaterials.Length; i++)
-                        cmd.DrawRenderer(renderer, m_MaskMaterial, i, 0);
-                }
+                if (renderer == null || !renderer.enabled || !renderer.gameObject.activeInHierarchy)
+                    continue;
+                
+                for (var i = 0; i < renderer.sharedMaterials.Length; i++)
+                    cmd.DrawRenderer(renderer, m_MaskMaterial, i, 0);
             }
-            
-            context.ExecuteCommandBuffer(cmd);
-            cmd.Clear();
+
+            if (m_Settings.useMSAA)
+                cmd.CopyTexture(m_MaskTexture, m_ResolvedMaskTexture);
         }
         
-        private void RenderOutline(CommandBuffer cmd, ref RenderingData renderingData)
+        private void RenderOutline(CommandBuffer cmd, Color outlineColor, ref RenderingData renderingData)
         {
+            var finalMask = m_Settings.useMSAA ? m_ResolvedMaskTexture : m_MaskTexture;
             var cameraColorTarget = renderingData.cameraData.renderer.cameraColorTargetHandle;
             
             // setup shader properties
-            m_OutlineMaterial.SetFloat(OutlineThicknessID, m_Settings.outlineThickness);
-            m_OutlineMaterial.SetColor(OutlineColorID, m_Settings.outlineColor);
-            m_OutlineMaterial.SetTexture(MaskTextureID, m_MaskTexture);
-            m_OutlineMaterial.SetTexture(SourceTextureID, cameraColorTarget);
+            
+            // m_OutlineMaterial.SetFloat(OutlineThicknessID, m_Settings.outlineThickness);
+            // m_OutlineMaterial.SetColor(OutlineColorID, outlineColor);
+            // m_OutlineMaterial.SetTexture(MaskTextureID, finalMask);
+            // m_OutlineMaterial.SetTexture(SourceTextureID, cameraColorTarget);
+            
+            cmd.SetGlobalFloat(OutlineThicknessID, m_Settings.outlineThickness);
+            cmd.SetGlobalColor(OutlineColorID, outlineColor);
+            cmd.SetGlobalTexture(MaskTextureID, finalMask.nameID);
+            cmd.SetGlobalTexture(SourceTextureID, cameraColorTarget.nameID);
             
             // draw outline to temporary render target
             var descriptor = renderingData.cameraData.cameraTargetDescriptor;
@@ -140,6 +156,7 @@ namespace ScreenSpaceOutline
         public void Dispose()
         {
             m_MaskTexture?.Release();
+            m_ResolvedMaskTexture?.Release();
             m_TempTexture?.Release();
         }
     }

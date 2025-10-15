@@ -1,10 +1,10 @@
 ﻿Shader "Hidden/Outline/Outline"
 {
-    Properties
-    {
-        _SourceTexture ("Source Texture", 2D) = "white" {}
-        _MaskTexture ("Mask Texture", 2D) = "white" {}
-    }
+//    Properties
+//    {
+//        _SourceTexture ("Source Texture", 2D) = "white" {}
+//        _MaskTexture ("Mask Texture", 2D) = "white" {}
+//    }
     
     SubShader
     {
@@ -26,10 +26,11 @@
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.core/Runtime/Utilities/Blit.hlsl"
             
-            TEXTURE2D(_SourceTexture);
-            SAMPLER(sampler_SourceTexture);
             TEXTURE2D(_MaskTexture);
             SAMPLER(sampler_MaskTexture);
+            
+            TEXTURE2D(_SourceTexture);
+            SAMPLER(sampler_SourceTexture);
             
             float _OutlineThickness;
             float4 _OutlineColor;
@@ -79,7 +80,7 @@
             }
             
             half4 frag(Varyings input) : SV_Target
-            {
+            {                
                 half4 originalColor = SAMPLE_TEXTURE2D(_SourceTexture, sampler_SourceTexture, input.texcoord);
                 half edge = DetectEdge(input.texcoord);
                 half3 finalColor = lerp(originalColor.rgb, _OutlineColor.rgb, edge);

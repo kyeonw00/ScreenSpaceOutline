@@ -6,18 +6,26 @@ namespace ScreenSpaceOutline
 {
     public class ScreenSpaceOutline : ScriptableRendererFeature
     {
+        public enum OutlineThicknessMode
+        {
+            Pixels,
+            WorldUnit,
+        }
+        
         [System.Serializable]
         public class OutlineSettings
         {
             [Header("Outline Properties")]
+            public OutlineThicknessMode thicknessMode;
+            
             [Range(1f, 10f)]
             public float outlineThickness = 2f;
-            
-            public Color outlineColor = Color.white;
             
             [Header("Performance")]
             [Range(0.25f, 1f)]
             public float renderTextureScale = 0.5f;
+
+            public bool useMSAA;
             
             [Header("Render Settings")]
             public RenderPassEvent renderPassEvent = RenderPassEvent.AfterRenderingTransparents;

@@ -19,6 +19,8 @@
             #pragma multi_compile_instancing
             
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+
+            float4 _MaskWriteColor;
             
             struct Attributes
             {

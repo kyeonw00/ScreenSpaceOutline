@@ -12,12 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d45b94a526474eb1848e8c41be046dc4, type: 3}
   m_Name: ScreenSpaceOutline
   m_EditorClassIdentifier: 
-  m_Active: 1
+  m_Active: 0
   settings:
     outlineThickness: 10
-    outlineColor: {r: 1, g: 0, b: 0, a: 1}
-    renderTextureScale: 0.25
-    useMSAA: 1
+    renderTextureScale: 1
+    useMSAA: 0
     renderPassEvent: 500
     outlineLayerMask:
       serializedVersion: 2
@@ -125,42 +124,3 @@ MonoBehaviour:
   m_CopyDepthMode: 0
   m_AccurateGbufferNormals: 0
   m_IntermediateTextureMode: 1
---- !u!114 &2076055132629566880
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 56af015810d94a7b968c338c2ee71fdd, type: 3}
-  m_Name: OutlineRendererFeature
-  m_EditorClassIdentifier: 
-  m_Active: 1
-  settings:
-    detectionMode: 2
-    algorithm: 0
-    outlineThickness: 1
-    depthSensitivity: 0.01
-    normalSensitivity: 0.5
-    renderPassEvent: 500
-    outlineLayerMask:
-      m_Bits: 0
-  stencilShader: {fileID: 4800000, guid: 83664d5a851e481a9434d5f9a7ebb11b, type: 3}
-  edgeDetectionShader: {fileID: 4800000, guid: cb26af748ba64e1db0a419dfd7e304e9, type: 3}
-  stencilMaterial: {fileID: 0}
-  edgeDetectionMaterial: {fileID: 0}
---- !u!114 &9031937367562536396
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5d111dc2a0b22b142804f4d59508b893, type: 3}
-  m_Name: EPO Feature
-  m_EditorClassIdentifier: 
-  m_Active: 0
