@@ -12,12 +12,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d45b94a526474eb1848e8c41be046dc4, type: 3}
   m_Name: ScreenSpaceOutline
   m_EditorClassIdentifier: 
-  m_Active: 0
+  m_Active: 1
   settings:
-    outlineThickness: 10
-    renderTextureScale: 1
+    thicknessMode: 0
+    outlineThickness: 3.23
+    renderTextureScale: 0.561
     useMSAA: 0
-    renderPassEvent: 500
+    renderPassEvent: 550
     outlineLayerMask:
       serializedVersion: 2
       m_Bits: 4294967295
@@ -76,7 +77,7 @@ MonoBehaviour:
   - {fileID: -1878332245247344467}
   - {fileID: -6043825667186148162}
   m_RendererFeatureMap: adc0de57c6d2eee5be3cfbc6930420ac
-  m_UseNativeRenderPass: 0
+  m_UseNativeRenderPass: 1
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
   xrSystemData: {fileID: 11400000, guid: 60e1133243b97e347b653163a8c01b64, type: 2}
   shaders:

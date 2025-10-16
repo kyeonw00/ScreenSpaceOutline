@@ -16,6 +16,8 @@ namespace ScreenSpaceOutline
         
         private Renderer m_CachedRenderer;
 
+        public Renderer Renderer => m_CachedRenderer;
+
         public Color OutlineColor => outlineColor;
 
         public bool IsActiveAndEnabled()
@@ -51,21 +53,16 @@ namespace ScreenSpaceOutline
             m_CachedRenderer = GetComponent<Renderer>();
         }
 
-        public static Dictionary<Color, List<OutlineRenderer>> GetRenderersByColor()
+        public static void GetActiveRenderers(List<OutlineRenderer> renderers)
         {
-            var groupedRenderers = new Dictionary<Color, List<OutlineRenderer>>();
+            renderers.Clear();
             foreach (var renderer in ActiveRenderers)
             {
                 if (renderer == null || !renderer.IsActiveAndEnabled())
                     continue;
-
-                if (!groupedRenderers.ContainsKey(renderer.outlineColor))
-                    groupedRenderers[renderer.outlineColor] = new List<OutlineRenderer>();
                 
-                groupedRenderers[renderer.outlineColor].Add(renderer);
+                renderers.Add(renderer);
             }
-
-            return groupedRenderers;
         }
     }
 }

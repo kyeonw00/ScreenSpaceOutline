@@ -14,10 +14,11 @@
         {
             Name "OutlineDetection"
             
-            ZWrite Off
-            ZTest Always
+            ZWrite On
+            ZTest LEqual
             Cull Off
             Blend Off
+            ColorMask RGBA
             
             HLSLPROGRAM
             #pragma vertex vert
@@ -33,7 +34,6 @@
             SAMPLER(sampler_SourceTexture);
             
             float _OutlineThickness;
-            float4 _OutlineColor;
             float4 _MaskTexture_TexelSize;
             
             Varyings vert(Attributes input)
@@ -41,7 +41,6 @@
                 Varyings output;
                 output.positionCS = GetFullScreenTriangleVertexPosition(input.vertexID);
                 output.texcoord = GetFullScreenTriangleTexCoord(input.vertexID);
-                
                 return output;
             }
             
@@ -52,18 +51,17 @@
 
                 // Sample by 8-direction
                 half samples[9];
-                samples[0] = SAMPLE_TEXTURE2D(_MaskTexture, sampler_MaskTexture, uv + float2(-texelSize.x, texelSize.y)).r;
-                samples[1] = SAMPLE_TEXTURE2D(_MaskTexture, sampler_MaskTexture, uv + float2(0, texelSize.y)).r;
-                samples[2] = SAMPLE_TEXTURE2D(_MaskTexture, sampler_MaskTexture, uv + float2(texelSize.x, texelSize.y)).r;
-                samples[3] = SAMPLE_TEXTURE2D(_MaskTexture, sampler_MaskTexture, uv + float2(-texelSize.x, 0)).r;
-                samples[4] = center;
-                samples[5] = SAMPLE_TEXTURE2D(_MaskTexture, sampler_MaskTexture, uv + float2(texelSize.x, 0)).r;
-                samples[6] = SAMPLE_TEXTURE2D(_MaskTexture, sampler_MaskTexture, uv + float2(-texelSize.x, -texelSize.y)).r;
-                samples[7] = SAMPLE_TEXTURE2D(_MaskTexture, sampler_MaskTexture, uv + float2(0, -texelSize.y)).r;
-                samples[8] = SAMPLE_TEXTURE2D(_MaskTexture, sampler_MaskTexture, uv + float2(texelSize.x, -texelSize.y)).r;
+                samples[0] = SAMPLE_TEXTURE2D(_MaskTexture, sampler_MaskTexture, uv + float2(-texelSize.x, texelSize.y)).a;
+                samples[1] = SAMPLE_TEXTURE2D(_MaskTexture, sampler_MaskTexture, uv + float2(0, texelSize.y)).a;
+                samples[2] = SAMPLE_TEXTURE2D(_MaskTexture, sampler_MaskTexture, uv + float2(texelSize.x, texelSize.y)).a;
+                samples[3] = SAMPLE_TEXTURE2D(_MaskTexture, sampler_MaskTexture, uv + float2(-texelSize.x, 0)).a;
+                samples[5] = SAMPLE_TEXTURE2D(_MaskTexture, sampler_MaskTexture, uv + float2(texelSize.x, 0)).a;
+                samples[6] = SAMPLE_TEXTURE2D(_MaskTexture, sampler_MaskTexture, uv + float2(-texelSize.x, -texelSize.y)).a;
+                samples[7] = SAMPLE_TEXTURE2D(_MaskTexture, sampler_MaskTexture, uv + float2(0, -texelSize.y)).a;
+                samples[8] = SAMPLE_TEXTURE2D(_MaskTexture, sampler_MaskTexture, uv + float2(texelSize.x, -texelSize.y)).a;
                 
-                half sobelX = samples[0] + 2.0 * samples[3] + samples[6] - samples[2] - 2.0 * samples[5] - samples[8];
-                half sobelY = samples[0] + 2.0 * samples[1] + samples[2] - samples[6] - 2.0 * samples[7] - samples[8];
+                half sobelX = samples[0] + 2.0 * samples[3] + samples[6] - (samples[2] + 2.0 * samples[5] + samples[8]);
+                half sobelY = samples[0] + 2.0 * samples[1] + samples[2] - (samples[6] + 2.0 * samples[7] + samples[8]);
                 half edge = sqrt(sobelX * sobelX + sobelY * sobelY);
                 
                 // anti-aliasing
@@ -78,14 +76,61 @@
                 
                 return saturate(edge);
             }
+
+            half3 SampleNearestMaskColor(float2 uv)
+            {
+                float2 t = _MaskTexture_TexelSize.xy * _OutlineThickness * 2;
+
+                half4 center = SAMPLE_TEXTURE2D(_MaskTexture, sampler_MaskTexture, uv);
+                if (center.a > 0.5)
+                    return center.rgb;
+
+                half4 color;
+
+                // vertical/horizontal sample
+                color = SAMPLE_TEXTURE2D(_MaskTexture, sampler_MaskTexture, uv + float2(t.x, 0));
+                if (color.a > 0.5)
+                    return color.rgb;
+                
+                color = SAMPLE_TEXTURE2D(_MaskTexture, sampler_MaskTexture, uv + float2(-t.x, 0));
+                if (color.a > 0.5)
+                    return color.rgb;
+                
+                color = SAMPLE_TEXTURE2D(_MaskTexture, sampler_MaskTexture, uv + float2( 0 , t.y));
+                if (color.a > 0.5)
+                    return color.rgb;
+                
+                color = SAMPLE_TEXTURE2D(_MaskTexture, sampler_MaskTexture, uv + float2( 0 ,-t.y));
+                if (color.a > 0.5)
+                    return color.rgb;
+
+                // diagonal sample
+                color = SAMPLE_TEXTURE2D(_MaskTexture, sampler_MaskTexture, uv + float2( t.x,  t.y));
+                if (color.a > 0.5h)
+                    return color.rgb;
+                    
+                color = SAMPLE_TEXTURE2D(_MaskTexture, sampler_MaskTexture, uv + float2(-t.x,  t.y));
+                if (color.a > 0.5h)
+                    return color.rgb;
+                    
+                color = SAMPLE_TEXTURE2D(_MaskTexture, sampler_MaskTexture, uv + float2( t.x, -t.y));
+                if (color.a > 0.5h)
+                    return color.rgb;
+                    
+                color = SAMPLE_TEXTURE2D(_MaskTexture, sampler_MaskTexture, uv + float2(-t.x, -t.y));
+                if (color.a > 0.5h)
+                    return color.rgb;
+                
+                return 0.0;
+            }
             
             half4 frag(Varyings input) : SV_Target
             {                
                 half4 originalColor = SAMPLE_TEXTURE2D(_SourceTexture, sampler_SourceTexture, input.texcoord);
                 half edge = DetectEdge(input.texcoord);
-                half3 finalColor = lerp(originalColor.rgb, _OutlineColor.rgb, edge);
-                
-                return half4(finalColor, 1.0);
+                half3 color = SampleNearestMaskColor(input.texcoord);
+                half3 finalColor = lerp(originalColor.rgb, color, edge);
+                return half4(finalColor.rgb, 1.0);
             }
             ENDHLSL
         }

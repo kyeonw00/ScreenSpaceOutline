@@ -20,7 +20,7 @@
             
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
-            float4 _MaskWriteColor;
+            float4 _OutlineColor;
             
             struct Attributes
             {
@@ -47,7 +47,7 @@
             half4 frag(Varyings input) : SV_Target
             {
                 UNITY_SETUP_INSTANCE_ID(input);
-                return half4(1, 1, 1, 1);
+                return half4(_OutlineColor.rgb, 1);
             }
             ENDHLSL
         }
