@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 
@@ -43,7 +42,6 @@ namespace ScreenSpaceOutline
         {
             var descriptor = renderingData.cameraData.cameraTargetDescriptor;
             descriptor.depthBufferBits = 0;
-            descriptor.graphicsFormat = GraphicsFormat.R16G16B16A16_SFloat;
             
             // set to mask resolution to current resolution
             var maskWidth = descriptor.width;
@@ -105,40 +103,16 @@ namespace ScreenSpaceOutline
             // setup mask render target
             cmd.SetRenderTarget(m_MaskTexture, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
             cmd.ClearRenderTarget(true, true, Color.clear);
-
-            var camera = renderingData.cameraData.camera;
-            var screenHeight = Mathf.Max(1f, camera.pixelHeight);
             
             // render outline just for cached `OutlineRenderer`s
             foreach (var outlineRenderer in renderers)
             {
                 if (outlineRenderer == null || !outlineRenderer.IsActiveAndEnabled())
                     continue;
-
-                var renderer = outlineRenderer.Renderer;
+                
+                var renderer = outlineRenderer.GetComponent<Renderer>();
                 if (renderer == null || !renderer.enabled || !renderer.gameObject.activeInHierarchy)
                     continue;
-
-                var thickness = m_Settings.outlineThickness;
-                
-                if (m_Settings.distanceAttenuation)
-                {
-                    var distance = Vector3.Distance(camera.transform.position, renderer.bounds.center);
-
-                    var normalizedDistance = 0f;
-                    if (distance <= m_Settings.minimumDistance)
-                        normalizedDistance = 0f;
-                    else if (distance >= m_Settings.maximumDistance)
-                        normalizedDistance = 1f;
-                    else
-                        normalizedDistance = (distance - m_Settings.minimumDistance) / (m_Settings.maximumDistance - m_Settings.minimumDistance);
-
-                    thickness = Mathf.Lerp(m_Settings.maximumThickness, m_Settings.minimumThickness, normalizedDistance);
-                    thickness = Mathf.Clamp01(thickness / screenHeight);
-                }
-
-                cmd.SetGlobalColor("_MaskWriteColor", outlineRenderer.OutlineColor);
-                cmd.SetGlobalFloat("_MaskThickness", thickness);
                 
                 for (var i = 0; i < renderer.sharedMaterials.Length; i++)
                     cmd.DrawRenderer(renderer, m_MaskMaterial, i, 0);

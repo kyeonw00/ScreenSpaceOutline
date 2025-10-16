@@ -18,8 +18,6 @@ namespace ScreenSpaceOutline
 
         public Color OutlineColor => outlineColor;
 
-        public Renderer Renderer => m_CachedRenderer;
-
         public bool IsActiveAndEnabled()
         {
             return isActiveAndEnabled && m_CachedRenderer != null && m_CachedRenderer.enabled;
