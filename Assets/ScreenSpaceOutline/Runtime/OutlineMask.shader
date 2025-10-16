@@ -21,6 +21,7 @@
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
             float4 _MaskWriteColor;
+            half _MaskThickness;
             
             struct Attributes
             {
@@ -47,7 +48,7 @@
             half4 frag(Varyings input) : SV_Target
             {
                 UNITY_SETUP_INSTANCE_ID(input);
-                return half4(1, 1, 1, 1);
+                return half4(_MaskWriteColor.rgb, _MaskThickness);
             }
             ENDHLSL
         }

@@ -12,9 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d45b94a526474eb1848e8c41be046dc4, type: 3}
   m_Name: ScreenSpaceOutline
   m_EditorClassIdentifier: 
-  m_Active: 0
+  m_Active: 1
   settings:
     outlineThickness: 10
+    distanceAttenuation: 0
+    minimumDistance: 1
+    maximumDistance: 100
+    maximumThickness: 0.1
+    minimumThickness: 1
     renderTextureScale: 1
     useMSAA: 0
     renderPassEvent: 500
