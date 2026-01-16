@@ -14,9 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_Active: 1
   settings:
-    thicknessMode: 0
-    outlineThickness: 3.23
-    renderTextureScale: 0.561
+    outlineThickness: 2.26
+    renderTextureScale: 0.62
     useMSAA: 0
     renderPassEvent: 550
     outlineLayerMask:

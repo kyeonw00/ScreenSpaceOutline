@@ -16,8 +16,6 @@ namespace ScreenSpaceOutline
         public class OutlineSettings
         {
             [Header("Outline Properties")]
-            public OutlineThicknessMode thicknessMode;
-            
             [Range(1f, 10f)]
             public float outlineThickness = 2f;
             
